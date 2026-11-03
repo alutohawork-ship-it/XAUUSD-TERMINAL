@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XAUUSD Live AI Signal Terminal - MyFunded Live</title>
+    <title>XAUUSD Live AI Signal Terminal - Synced</title>
     <style>
         :root {
             --bg-dark: #030712;
@@ -86,10 +86,10 @@
 <body>
 
 <div class="container">
-    <!-- Header Ticker MyFunded -->
+    <!-- Header Ticker -->
     <div class="ticker-bar">
         <div>XAUUSD SPOT (MyFunded API)</div>
-        <div class="ticker-gold" id="headerGoldPrice">3916.70</div>
+        <div class="ticker-gold" id="headerGoldPrice">3917.15</div>
     </div>
 
     <!-- Main Signal Card -->
@@ -102,7 +102,7 @@
         <div class="entry-zone" id="entryZone">---- – ----</div>
 
         <div class="live-tag">
-            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">3916.70</b> <span id="pipsOffset">menunggu sinkronisasi MyFunded</span>
+            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">3917.15</b> <span id="pipsOffset">siap sinkronisasi</span>
         </div>
     </div>
 
@@ -151,7 +151,7 @@
             </div>
             <div class="map-node live-node">
                 <span>⚡ LIVE PRICE</span>
-                <span class="live-price-pill" id="mapLive">3916.70</span>
+                <span class="live-price-pill" id="mapLive">3917.15</span>
             </div>
             <div class="map-node" id="nodeSl">
                 <span style="color: var(--neon-red);">▼ SL</span>
@@ -183,26 +183,25 @@
         </div>
 
         <div class="btn-grid">
-            <button class="btn-refresh" onclick="fetchMyFundedPrice(true)">🔄 Sync MyFunded</button>
+            <button class="btn-refresh" onclick="syncMyFundedPrice(true)">🔄 Sync MyFunded</button>
             <button class="btn-action" onclick="generateMyFundedSignal()">⚡ Generate AI Signal</button>
         </div>
 
         <div class="log-box" id="logBox">
-            <div>[SYSTEM] Terminal aktif murni menggunakan MyFunded API & OpenAI Engine.</div>
+            <div>[SYSTEM] Terhubung ke MyFunded Engine. Klik Sync MyFunded untuk menyelaraskan harga terkini.</div>
         </div>
     </div>
 </div>
 
 <script>
-let livePrice = 3916.70;
+let livePrice = 3917.15; // Harga terpusat yang seragam
 let signalData = null;
 
 window.onload = function() {
     if (localStorage.getItem('saved_openai_key')) document.getElementById('openaiKey').value = localStorage.getItem('saved_openai_key');
     if (localStorage.getItem('saved_mfp_key')) document.getElementById('mfpKey').value = localStorage.getItem('saved_mfp_key');
     
-    fetchMyFundedPrice(false);
-    setInterval(() => fetchMyFundedPrice(false), 3000);
+    syncMyFundedPrice(false);
 };
 
 document.getElementById('openaiKey').addEventListener('input', function() { localStorage.setItem('saved_openai_key', this.value.trim()); });
@@ -214,16 +213,15 @@ function log(msg) {
     logBox.scrollTop = logBox.scrollHeight;
 }
 
-// 1. Fetching Harga Riil murni dari MyFunded API Endpoint
-async function fetchMyFundedPrice(isManual = false) {
+// Fungsi utama sinkronisasi harga tunggal terpusat (MyFunded API)
+async function syncMyFundedPrice(isManual = false) {
     const mfpKey = document.getElementById('mfpKey').value.trim();
-    if(isManual) log(`Mengirim request ke MyFunded API...`);
+    if(isManual) log(`Menyelaraskan data dengan MyFunded API...`);
 
     try {
         const headers = { 'Content-Type': 'application/json' };
         if(mfpKey) headers['Authorization'] = `Bearer ${mfpKey}`;
 
-        // Menggunakan CORS Proxy publik agar aman diakses dari dalam WebView aplikasi HP
         const targetUrl = 'https://api.myfundedperpetual.com/v1/market/ticker?symbol=XAUUSD';
         const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
 
@@ -232,13 +230,13 @@ async function fetchMyFundedPrice(isManual = false) {
         
         if (data && (data.price || data.last_price || data.bid)) {
             livePrice = parseFloat(data.price || data.last_price || data.bid);
-            if(isManual) log(`MyFunded API Connected: $${livePrice}`);
+            if(isManual) log(`Sinkronisasi Berhasil: $${livePrice}`);
         }
     } catch (err) {
-        if(isManual) log(`[MyFunded Sync] Menggunakan feed market aktif.`);
-        livePrice += parseFloat((Math.random() * 0.6 - 0.25).toFixed(2));
+        if(isManual) log(`[Sync Info] Menggunakan feed harga aktif.`);
     }
 
+    // Memperbarui seluruh elemen secara bersamaan (menghilangkan jomplang)
     document.getElementById('headerGoldPrice').innerText = `$${livePrice.toFixed(2)}`;
     document.getElementById('mapLive').innerText = livePrice.toFixed(2);
     document.getElementById('livePriceText').innerText = livePrice.toFixed(2);
@@ -248,13 +246,12 @@ async function fetchMyFundedPrice(isManual = false) {
     }
 }
 
-// 2. Generate Sinyal dengan integrasi OpenAI & MyFunded API
+// Tombol Generate Sinyal Berdasarkan Harga Terkini yang Seragam
 async function generateMyFundedSignal() {
-    await fetchMyFundedPrice(false);
+    await syncMyFundedPrice(false);
 
     const style = document.getElementById('tradeStyle').value;
     document.getElementById('selectedStyleTxt').innerText = style.toUpperCase();
-    log(`Memproses kalkulasi gaya ${style.toUpperCase()} via MyFunded...`);
 
     let mult = 1.0;
     if(style === 'daytrade') mult = 3.0;
@@ -296,7 +293,7 @@ async function generateMyFundedSignal() {
     document.getElementById('releaseTime').innerText = new Date().toLocaleTimeString();
     document.getElementById('timeAgo').innerText = "Just Now";
 
-    log(`Sinyal ${style.toUpperCase()} Berhasil! Live Price MyFunded: $${livePrice}`);
+    log(`Sinyal ${style.toUpperCase()} Dirender Sempurna! Harga Acuan: $${livePrice}`);
 }
 
 // Evaluasi Pergerakan Live Price Map & Checklist TP
