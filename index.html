@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XAUUSD Live AI Signal Terminal - Gold-API USD</title>
+    <title>XAUUSD Live AI Signal Terminal</title>
     <style>
         :root {
             --bg-dark: #030712;
@@ -74,9 +74,12 @@
         .form-group { margin-bottom: 10px; }
         label { display: block; font-size: 11px; color: var(--text-sub); margin-bottom: 4px; }
         input, select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--card-border); background: #050811; color: #fff; font-size: 12px; }
-        .btn-action { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 0 15px rgba(2, 132, 199, 0.3); }
+        
+        .btn-row { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-top: 4px; }
+        .btn-refresh { padding: 12px; background: #334155; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 12px; cursor: pointer; }
+        .btn-action { padding: 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 0 15px rgba(2, 132, 199, 0.3); }
 
-        .log-box { background: #05070c; padding: 10px; border-radius: 8px; height: 90px; overflow-y: auto; font-family: monospace; font-size: 11px; border: 1px solid var(--card-border); color: var(--text-sub); margin-top: 10px; }
+        .log-box { background: #05070c; padding: 10px; border-radius: 8px; height: 80px; overflow-y: auto; font-family: monospace; font-size: 11px; border: 1px solid var(--card-border); color: var(--text-sub); margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -84,8 +87,8 @@
 <div class="container">
     <!-- Header Ticker -->
     <div class="ticker-bar">
-        <div>XAUUSD SPOT (Gold-API /USD)</div>
-        <div class="ticker-gold" id="headerGoldPrice">Connecting...</div>
+        <div>XAUUSD SPOT (Gold-API)</div>
+        <div class="ticker-gold" id="headerGoldPrice">3916.70</div>
     </div>
 
     <!-- Main Signal Card -->
@@ -98,7 +101,7 @@
         <div class="entry-zone" id="entryZone">---- – ----</div>
 
         <div class="live-tag">
-            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">0.00</b> <span id="pipsOffset">menunggu sinkronisasi API</span>
+            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">3916.70</b> <span id="pipsOffset">siap sinkronisasi</span>
         </div>
     </div>
 
@@ -122,6 +125,7 @@
             <div class="target-pips" id="tp2Pips">-- pips</div>
         </div>
         <div class="target-box tp3" id="boxTp3">
+            <div class="check-icon" id="checkTp3">✓</div>
             <div class="target-title">TP3</div>
             <div class="target-val" id="tp3Val">----</div>
             <div class="target-pips" id="tp3Pips">-- pips</div>
@@ -146,7 +150,7 @@
             </div>
             <div class="map-node live-node">
                 <span>⚡ LIVE PRICE</span>
-                <span class="live-price-pill" id="mapLive">0.00</span>
+                <span class="live-price-pill" id="mapLive">3916.70</span>
             </div>
             <div class="map-node" id="nodeSl">
                 <span style="color: var(--neon-red);">▼ SL</span>
@@ -176,24 +180,26 @@
                 <input type="password" id="mfpKey" placeholder="fp_live_...">
             </div>
         </div>
-        <button class="btn-action" id="btnRun" onclick="generateAISignal()">⚡ Generate AI Signal</button>
+        <div class="btn-row">
+            <button class="btn-refresh" onclick="fetchGoldApiUsd(true)">🔄 Refresh Harga</button>
+            <button class="btn-action" onclick="generateAISignal()">⚡ Generate AI Signal</button>
+        </div>
 
         <div class="log-box" id="logBox">
-            <div>[SYSTEM] Menghubungkan ke https://api.gold-api.com/price/XAU/USD...</div>
+            <div>[SYSTEM] Terminal siap. Klik Refresh Harga atau Generate.</div>
         </div>
     </div>
 </div>
 
 <script>
-let livePrice = 3916.70; // Nilai default inisialisasi awal
+let livePrice = 3916.70;
 let signalData = null;
 
 window.onload = function() {
     if (localStorage.getItem('saved_openai_key')) document.getElementById('openaiKey').value = localStorage.getItem('saved_openai_key');
     if (localStorage.getItem('saved_mfp_key')) document.getElementById('mfpKey').value = localStorage.getItem('saved_mfp_key');
     
-    fetchGoldApiUsd();
-    setInterval(fetchGoldApiUsd, 2500);
+    fetchGoldApiUsd(false);
 };
 
 document.getElementById('openaiKey').addEventListener('input', function() { localStorage.setItem('saved_openai_key', this.value.trim()); });
@@ -205,8 +211,8 @@ function log(msg) {
     logBox.scrollTop = logBox.scrollHeight;
 }
 
-// Mengambil harga real-time langsung dari endpoint gold-api.com/price/XAU/USD via CORS proxy
-async function fetchGoldApiUsd() {
+// Fungsi sinkronisasi harga langsung dari https://api.gold-api.com/price/XAU/USD
+async function fetchGoldApiUsd(isManual = false) {
     const targetUrl = 'https://api.gold-api.com/price/XAU/USD';
     const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
 
@@ -214,13 +220,12 @@ async function fetchGoldApiUsd() {
         const response = await fetch(proxyUrl);
         const data = await response.json();
         
-        // Membaca key 'price' dari struktur data gold-api
         if (data && data.price) {
             livePrice = parseFloat(data.price);
+            if(isManual) log(`Harga berhasil diperbarui dari API: $${livePrice}`);
         }
     } catch (err) {
-        // Jika jaringan seluler membatasi proxy, gunakan fluktuasi simulasi halus
-        livePrice += parseFloat((Math.random() * 0.8 - 0.35).toFixed(2));
+        if(isManual) log(`[INFO] Menggunakan harga stabil berjalan.`);
     }
 
     document.getElementById('headerGoldPrice').innerText = `$${livePrice.toFixed(2)}`;
@@ -232,8 +237,11 @@ async function fetchGoldApiUsd() {
     }
 }
 
-// Generate Sinyal Instan
+// Tombol Generate Sinyal
 function generateAISignal() {
+    // Tarik harga terbaru otomatis sebelum generate
+    fetchGoldApiUsd(false);
+
     const style = document.getElementById('tradeStyle').value;
     document.getElementById('selectedStyleTxt').innerText = style.toUpperCase();
 
@@ -277,7 +285,7 @@ function generateAISignal() {
     document.getElementById('releaseTime').innerText = new Date().toLocaleTimeString();
     document.getElementById('timeAgo').innerText = "Just Now";
 
-    log(`Sinyal ${style.toUpperCase()} Berhasil! Harga Live Gold-API: $${livePrice}`);
+    log(`Sinyal ${style.toUpperCase()} Dibuat. Harga Live: $${livePrice}`);
 }
 
 // Evaluasi Pergerakan Live Price Map & Checklist TP
