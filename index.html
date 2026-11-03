@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XAUUSD Live AI Signal Terminal - Gold-API</title>
+    <title>XAUUSD Live AI Signal Terminal - Gold-API USD</title>
     <style>
         :root {
             --bg-dark: #030712;
@@ -84,7 +84,7 @@
 <div class="container">
     <!-- Header Ticker -->
     <div class="ticker-bar">
-        <div>XAUUSD SPOT (Gold-API)</div>
+        <div>XAUUSD SPOT (Gold-API /USD)</div>
         <div class="ticker-gold" id="headerGoldPrice">Connecting...</div>
     </div>
 
@@ -179,21 +179,21 @@
         <button class="btn-action" id="btnRun" onclick="generateAISignal()">⚡ Generate AI Signal</button>
 
         <div class="log-box" id="logBox">
-            <div>[SYSTEM] Menghubungkan ke Gold-API...</div>
+            <div>[SYSTEM] Menghubungkan ke https://api.gold-api.com/price/XAU/USD...</div>
         </div>
     </div>
 </div>
 
 <script>
-let livePrice = 3916.70; // Harga default awal agar langsung siap
+let livePrice = 3916.70; // Nilai default inisialisasi awal
 let signalData = null;
 
 window.onload = function() {
     if (localStorage.getItem('saved_openai_key')) document.getElementById('openaiKey').value = localStorage.getItem('saved_openai_key');
     if (localStorage.getItem('saved_mfp_key')) document.getElementById('mfpKey').value = localStorage.getItem('saved_mfp_key');
     
-    fetchGoldApiDirect();
-    setInterval(fetchGoldApiDirect, 3000);
+    fetchGoldApiUsd();
+    setInterval(fetchGoldApiUsd, 2500);
 };
 
 document.getElementById('openaiKey').addEventListener('input', function() { localStorage.setItem('saved_openai_key', this.value.trim()); });
@@ -205,19 +205,21 @@ function log(msg) {
     logBox.scrollTop = logBox.scrollHeight;
 }
 
-// Fungsi menarik harga murni dari https://api.gold-api.com/price/XAU menggunakan proxy aman CORS
-async function fetchGoldApiDirect() {
-    const apiUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.gold-api.com/price/XAU');
+// Mengambil harga real-time langsung dari endpoint gold-api.com/price/XAU/USD via CORS proxy
+async function fetchGoldApiUsd() {
+    const targetUrl = 'https://api.gold-api.com/price/XAU/USD';
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
 
     try {
-        const response = await fetch(apiUrl);
+        const response = await fetch(proxyUrl);
         const data = await response.json();
         
+        // Membaca key 'price' dari struktur data gold-api
         if (data && data.price) {
             livePrice = parseFloat(data.price);
         }
     } catch (err) {
-        // Jika jaringan seluler memblokir proxy, gunakan simulator pergerakan real
+        // Jika jaringan seluler membatasi proxy, gunakan fluktuasi simulasi halus
         livePrice += parseFloat((Math.random() * 0.8 - 0.35).toFixed(2));
     }
 
@@ -230,7 +232,7 @@ async function fetchGoldApiDirect() {
     }
 }
 
-// Generate Sinyal Instan Tanpa Blokir
+// Generate Sinyal Instan
 function generateAISignal() {
     const style = document.getElementById('tradeStyle').value;
     document.getElementById('selectedStyleTxt').innerText = style.toUpperCase();
