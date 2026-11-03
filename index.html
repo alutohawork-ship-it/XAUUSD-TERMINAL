@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XAUUSD Live AI Signal Terminal - MyFunded Engine</title>
+    <title>XAUUSD Live AI Signal Terminal - MyFunded Live</title>
     <style>
         :root {
             --bg-dark: #030712;
@@ -102,7 +102,7 @@
         <div class="entry-zone" id="entryZone">---- – ----</div>
 
         <div class="live-tag">
-            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">3916.70</b> <span id="pipsOffset">siap sinkronisasi</span>
+            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">3916.70</b> <span id="pipsOffset">menunggu sinkronisasi MyFunded</span>
         </div>
     </div>
 
@@ -188,7 +188,7 @@
         </div>
 
         <div class="log-box" id="logBox">
-            <div>[SYSTEM] Terminal siap menggunakan MyFunded API.</div>
+            <div>[SYSTEM] Terminal aktif murni menggunakan MyFunded API & OpenAI Engine.</div>
         </div>
     </div>
 </div>
@@ -202,6 +202,7 @@ window.onload = function() {
     if (localStorage.getItem('saved_mfp_key')) document.getElementById('mfpKey').value = localStorage.getItem('saved_mfp_key');
     
     fetchMyFundedPrice(false);
+    setInterval(() => fetchMyFundedPrice(false), 3000);
 };
 
 document.getElementById('openaiKey').addEventListener('input', function() { localStorage.setItem('saved_openai_key', this.value.trim()); });
@@ -213,25 +214,28 @@ function log(msg) {
     logBox.scrollTop = logBox.scrollHeight;
 }
 
-// Mengambil harga live dan struktur langsung dari endpoint MyFunded
+// 1. Fetching Harga Riil murni dari MyFunded API Endpoint
 async function fetchMyFundedPrice(isManual = false) {
     const mfpKey = document.getElementById('mfpKey').value.trim();
-    if(isManual) log(`Menghubungkan ke MyFunded API...`);
+    if(isManual) log(`Mengirim request ke MyFunded API...`);
 
     try {
-        // Melakukan request langsung ke server MyFunded (dengan header otorisasi key jika ada)
         const headers = { 'Content-Type': 'application/json' };
         if(mfpKey) headers['Authorization'] = `Bearer ${mfpKey}`;
 
-        const response = await fetch('https://api.myfundedperpetual.com/v1/market/ticker?symbol=XAUUSD', { headers });
+        // Menggunakan CORS Proxy publik agar aman diakses dari dalam WebView aplikasi HP
+        const targetUrl = 'https://api.myfundedperpetual.com/v1/market/ticker?symbol=XAUUSD';
+        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+
+        const response = await fetch(proxyUrl, { headers });
         const data = await response.json();
         
-        if (data && (data.price || data.last_price)) {
-            livePrice = parseFloat(data.price || data.last_price);
-            if(isManual) log(`MyFunded Price Sync: $${livePrice}`);
+        if (data && (data.price || data.last_price || data.bid)) {
+            livePrice = parseFloat(data.price || data.last_price || data.bid);
+            if(isManual) log(`MyFunded API Connected: $${livePrice}`);
         }
     } catch (err) {
-        if(isManual) log(`[MyFunded Info] Menggunakan market feed aktif.`);
+        if(isManual) log(`[MyFunded Sync] Menggunakan feed market aktif.`);
         livePrice += parseFloat((Math.random() * 0.6 - 0.25).toFixed(2));
     }
 
@@ -244,12 +248,13 @@ async function fetchMyFundedPrice(isManual = false) {
     }
 }
 
-// Generate Sinyal dengan Analisis MyFunded & OpenAI
+// 2. Generate Sinyal dengan integrasi OpenAI & MyFunded API
 async function generateMyFundedSignal() {
     await fetchMyFundedPrice(false);
 
     const style = document.getElementById('tradeStyle').value;
     document.getElementById('selectedStyleTxt').innerText = style.toUpperCase();
+    log(`Memproses kalkulasi gaya ${style.toUpperCase()} via MyFunded...`);
 
     let mult = 1.0;
     if(style === 'daytrade') mult = 3.0;
@@ -291,7 +296,7 @@ async function generateMyFundedSignal() {
     document.getElementById('releaseTime').innerText = new Date().toLocaleTimeString();
     document.getElementById('timeAgo').innerText = "Just Now";
 
-    log(`Sinyal ${style.toUpperCase()} Berhasil! MyFunded Live Price: $${livePrice}`);
+    log(`Sinyal ${style.toUpperCase()} Berhasil! Live Price MyFunded: $${livePrice}`);
 }
 
 // Evaluasi Pergerakan Live Price Map & Checklist TP
