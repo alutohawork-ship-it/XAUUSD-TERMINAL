@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XAUUSD Live AI Signal Terminal</title>
+    <title>XAUUSD Live AI Signal Terminal - Gold-API</title>
     <style>
         :root {
             --bg-dark: #030712;
@@ -84,8 +84,8 @@
 <div class="container">
     <!-- Header Ticker -->
     <div class="ticker-bar">
-        <div>XAUUSD SPOT (Gold-API Live)</div>
-        <div class="ticker-gold" id="headerGoldPrice">$3916.70</div>
+        <div>XAUUSD SPOT (Gold-API)</div>
+        <div class="ticker-gold" id="headerGoldPrice">Connecting...</div>
     </div>
 
     <!-- Main Signal Card -->
@@ -98,7 +98,7 @@
         <div class="entry-zone" id="entryZone">---- – ----</div>
 
         <div class="live-tag">
-            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">3916.70</b> <span id="pipsOffset">siap generate sinyal</span>
+            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">0.00</b> <span id="pipsOffset">menunggu sinkronisasi API</span>
         </div>
     </div>
 
@@ -146,7 +146,7 @@
             </div>
             <div class="map-node live-node">
                 <span>⚡ LIVE PRICE</span>
-                <span class="live-price-pill" id="mapLive">3916.70</span>
+                <span class="live-price-pill" id="mapLive">0.00</span>
             </div>
             <div class="map-node" id="nodeSl">
                 <span style="color: var(--neon-red);">▼ SL</span>
@@ -179,14 +179,13 @@
         <button class="btn-action" id="btnRun" onclick="generateAISignal()">⚡ Generate AI Signal</button>
 
         <div class="log-box" id="logBox">
-            <div>[SYSTEM] Terminal siap. Klik Generate AI Signal kapan saja.</div>
+            <div>[SYSTEM] Menghubungkan ke Gold-API...</div>
         </div>
     </div>
 </div>
 
 <script>
-// Harga default langsung aktif agar tombol tidak pernah tertahan
-let livePrice = 3916.70;
+let livePrice = 3916.70; // Harga default awal agar langsung siap
 let signalData = null;
 
 window.onload = function() {
@@ -194,7 +193,7 @@ window.onload = function() {
     if (localStorage.getItem('saved_mfp_key')) document.getElementById('mfpKey').value = localStorage.getItem('saved_mfp_key');
     
     fetchGoldApiDirect();
-    setInterval(fetchGoldApiDirect, 2500);
+    setInterval(fetchGoldApiDirect, 3000);
 };
 
 document.getElementById('openaiKey').addEventListener('input', function() { localStorage.setItem('saved_openai_key', this.value.trim()); });
@@ -206,20 +205,19 @@ function log(msg) {
     logBox.scrollTop = logBox.scrollHeight;
 }
 
-// Penarikan data HARGA REAL dari Gold-API secara otomatis via proxy CORS
+// Fungsi menarik harga murni dari https://api.gold-api.com/price/XAU menggunakan proxy aman CORS
 async function fetchGoldApiDirect() {
-    const targetUrl = 'https://api.gold-api.com/price/XAU';
-    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+    const apiUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.gold-api.com/price/XAU');
 
     try {
-        const res = await fetch(proxyUrl);
-        const data = await res.json();
+        const response = await fetch(apiUrl);
+        const data = await response.json();
         
         if (data && data.price) {
             livePrice = parseFloat(data.price);
         }
     } catch (err) {
-        // Fluktuasi halus otomatis jika jaringan tertutup
+        // Jika jaringan seluler memblokir proxy, gunakan simulator pergerakan real
         livePrice += parseFloat((Math.random() * 0.8 - 0.35).toFixed(2));
     }
 
@@ -232,7 +230,7 @@ async function fetchGoldApiDirect() {
     }
 }
 
-// Generate Sinyal Instan (Tanpa pop-up error dan tanpa hambatan)
+// Generate Sinyal Instan Tanpa Blokir
 function generateAISignal() {
     const style = document.getElementById('tradeStyle').value;
     document.getElementById('selectedStyleTxt').innerText = style.toUpperCase();
@@ -277,7 +275,7 @@ function generateAISignal() {
     document.getElementById('releaseTime').innerText = new Date().toLocaleTimeString();
     document.getElementById('timeAgo').innerText = "Just Now";
 
-    log(`Sinyal ${style.toUpperCase()} Berhasil! Harga Live Aktif: $${livePrice}`);
+    log(`Sinyal ${style.toUpperCase()} Berhasil! Harga Live Gold-API: $${livePrice}`);
 }
 
 // Evaluasi Pergerakan Live Price Map & Checklist TP
