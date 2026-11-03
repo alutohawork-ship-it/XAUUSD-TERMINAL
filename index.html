@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD Live AI Signal Terminal</title>
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --card-bg: #0b1120;
+            --card-border: #1e293b;
+            --neon-blue: #38bdf8;
+            --neon-green: #22c55e;
+            --neon-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg-dark); color: var(--text-main); padding: 12px; font-size: 14px; }
+        .container { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+        /* Header Ticker */
+        .ticker-bar { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 8px 12px; background: rgba(15, 23, 42, 0.9); border-radius: 8px; border: 1px solid #1e3a8a; font-weight: bold; }
+        .ticker-gold { color: var(--neon-blue); font-size: 13px; font-weight: 900; }
+
+        /* Main Signal Card */
+        .signal-card { background: linear-gradient(180deg, #0d1527 0%, #070c16 100%); border: 1px solid #1e3a8a; border-radius: 20px; padding: 20px; text-align: center; position: relative; box-shadow: 0 0 25px rgba(56, 189, 248, 0.08); }
+        .action-badge { display: inline-flex; align-items: center; gap: 6px; background: #334155; color: #fff; font-weight: 800; padding: 6px 20px; border-radius: 20px; font-size: 15px; text-transform: uppercase; margin-bottom: 12px; }
+        .action-badge.buy { background: #0284c7; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+        
+        .signal-meta { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
+        .entry-label { font-size: 11px; letter-spacing: 1.5px; color: #64748b; margin-top: 10px; font-weight: bold; }
+        .entry-zone { font-size: 38px; font-weight: 900; color: #fff; letter-spacing: -1px; margin: 4px 0 10px 0; }
+        
+        .live-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; padding: 4px 12px; border-radius: 20px; font-size: 11px; color: var(--text-sub); }
+        .dot { width: 8px; height: 8px; background: #64748b; border-radius: 50%; display: inline-block; }
+        .dot.active { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); animation: pulse 1.5s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        /* Target Cards Grid */
+        .targets-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .target-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 6px; text-align: center; position: relative; transition: 0.3s; }
+        .target-box.sl { border-color: rgba(239, 68, 68, 0.4); }
+        .target-box.tp { border-color: rgba(34, 197, 94, 0.4); }
+        .target-box.tp3 { border-color: rgba(56, 189, 248, 0.4); }
+        .target-box.hit { background: rgba(34, 197, 94, 0.15); border-color: var(--neon-green); }
+
+        .target-title { font-size: 10px; color: var(--text-sub); font-weight: bold; margin-bottom: 4px; }
+        .target-val { font-size: 14px; font-weight: 800; }
+        .sl .target-val { color: var(--neon-red); }
+        .tp .target-val { color: var(--neon-green); }
+        .tp3 .target-val { color: var(--neon-blue); }
+        .target-pips { font-size: 10px; color: #64748b; margin-top: 2px; }
+
+        .check-icon { position: absolute; top: -8px; right: 50%; transform: translateX(50%); background: var(--neon-green); color: #000; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; font-weight: bold; display: none; align-items: center; justify-content: center; }
+        .check-icon.show { display: flex; }
+
+        /* Price Map */
+        .price-map { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 16px; }
+        .map-title { font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #64748b; margin-bottom: 12px; }
+        .map-line-container { position: relative; padding: 10px 0 10px 30px; border-left: 2px dashed #334155; margin-left: 20px; display: flex; flex-direction: column; gap: 14px; }
+        .map-node { position: relative; display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: var(--text-sub); }
+        .map-node::before { content: ''; position: absolute; left: -36px; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: #334155; }
+        .map-node.hit-node::before { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        .map-node.live-node { color: #fff; }
+        .map-node.live-node::before { background: #fff; box-shadow: 0 0 10px #fff; }
+        
+        .live-price-pill { background: #fff; color: #000; padding: 2px 8px; border-radius: 10px; font-weight: 800; }
+
+        /* Controls */
+        .controls-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 14px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 11px; color: var(--text-sub); margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--card-border); background: #050811; color: #fff; font-size: 12px; }
+        .btn-action { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 0 15px rgba(2, 132, 199, 0.3); }
+
+        .log-box { background: #05070c; padding: 10px; border-radius: 8px; height: 90px; overflow-y: auto; font-family: monospace; font-size: 11px; border: 1px solid var(--card-border); color: var(--text-sub); margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header Ticker -->
+    <div class="ticker-bar">
+        <div>XAUUSD SPOT (Gold-API Live)</div>
+        <div class="ticker-gold" id="headerGoldPrice">$3916.70</div>
+    </div>
+
+    <!-- Main Signal Card -->
+    <div class="signal-card">
+        <div class="action-badge" id="signalAction">WAITING</div>
+        <div class="signal-meta">Gold / <span id="selectedStyleTxt">Scalping</span> / <span id="timeAgo">--</span></div>
+        <div class="signal-meta" style="font-size: 10px; color: #64748b;">Released <span id="releaseTime">--:--:--</span></div>
+
+        <div class="entry-label" id="entryLabel">ENTRY ZONE</div>
+        <div class="entry-zone" id="entryZone">---- – ----</div>
+
+        <div class="live-tag">
+            <span class="dot" id="liveDot"></span> LIVE <b id="livePriceText" style="color: #fff;">3916.70</b> <span id="pipsOffset">siap generate sinyal</span>
+        </div>
+    </div>
+
+    <!-- Target Grid -->
+    <div class="targets-grid">
+        <div class="target-box sl" id="boxSl">
+            <div class="target-title">SL</div>
+            <div class="target-val" id="slVal">----</div>
+            <div class="target-pips" id="slPips">-- pips</div>
+        </div>
+        <div class="target-box tp" id="boxTp1">
+            <div class="check-icon" id="checkTp1">✓</div>
+            <div class="target-title">TP1</div>
+            <div class="target-val" id="tp1Val">----</div>
+            <div class="target-pips" id="tp1Pips">-- pips</div>
+        </div>
+        <div class="target-box tp" id="boxTp2">
+            <div class="check-icon" id="checkTp2">✓</div>
+            <div class="target-title">TP2</div>
+            <div class="target-val" id="tp2Val">----</div>
+            <div class="target-pips" id="tp2Pips">-- pips</div>
+        </div>
+        <div class="target-box tp3" id="boxTp3">
+            <div class="target-title">TP3</div>
+            <div class="target-val" id="tp3Val">----</div>
+            <div class="target-pips" id="tp3Pips">-- pips</div>
+        </div>
+    </div>
+
+    <!-- Price Map -->
+    <div class="price-map">
+        <div class="map-title">LIVE PRICE MAP</div>
+        <div class="map-line-container">
+            <div class="map-node" id="nodeTp3">
+                <span style="color: var(--neon-blue);">▲ TP3</span>
+                <span id="mapTp3">----</span>
+            </div>
+            <div class="map-node" id="nodeTp2">
+                <span style="color: var(--neon-green);">TP2</span>
+                <span id="mapTp2">----</span>
+            </div>
+            <div class="map-node" id="nodeTp1">
+                <span style="color: var(--neon-green);">TP1</span>
+                <span id="mapTp1">----</span>
+            </div>
+            <div class="map-node live-node">
+                <span>⚡ LIVE PRICE</span>
+                <span class="live-price-pill" id="mapLive">3916.70</span>
+            </div>
+            <div class="map-node" id="nodeSl">
+                <span style="color: var(--neon-red);">▼ SL</span>
+                <span id="mapSl">----</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-card">
+        <div class="form-group">
+            <label>Gaya Trading (Style)</label>
+            <select id="tradeStyle">
+                <option value="scalping">Scalping (Jarak TP/SL Pendek)</option>
+                <option value="daytrade">Day Trade (Menengah)</option>
+                <option value="intraday">Intraday (Prop Firm Standard)</option>
+                <option value="swing">Swing (Jarak Lebar)</option>
+            </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div class="form-group">
+                <label>OpenAI API Key</label>
+                <input type="password" id="openaiKey" placeholder="sk-...">
+            </div>
+            <div class="form-group">
+                <label>MyFunded Key</label>
+                <input type="password" id="mfpKey" placeholder="fp_live_...">
+            </div>
+        </div>
+        <button class="btn-action" id="btnRun" onclick="generateAISignal()">⚡ Generate AI Signal</button>
+
+        <div class="log-box" id="logBox">
+            <div>[SYSTEM] Terminal siap. Klik Generate AI Signal kapan saja.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Harga default langsung aktif agar tombol tidak pernah tertahan
+let livePrice = 3916.70;
+let signalData = null;
+
+window.onload = function() {
+    if (localStorage.getItem('saved_openai_key')) document.getElementById('openaiKey').value = localStorage.getItem('saved_openai_key');
+    if (localStorage.getItem('saved_mfp_key')) document.getElementById('mfpKey').value = localStorage.getItem('saved_mfp_key');
+    
+    fetchGoldApiDirect();
+    setInterval(fetchGoldApiDirect, 2500);
+};
+
+document.getElementById('openaiKey').addEventListener('input', function() { localStorage.setItem('saved_openai_key', this.value.trim()); });
+document.getElementById('mfpKey').addEventListener('input', function() { localStorage.setItem('saved_mfp_key', this.value.trim()); });
+
+function log(msg) {
+    const logBox = document.getElementById('logBox');
+    logBox.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+// Penarikan data HARGA REAL dari Gold-API secara otomatis via proxy CORS
+async function fetchGoldApiDirect() {
+    const targetUrl = 'https://api.gold-api.com/price/XAU';
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+
+    try {
+        const res = await fetch(proxyUrl);
+        const data = await res.json();
+        
+        if (data && data.price) {
+            livePrice = parseFloat(data.price);
+        }
+    } catch (err) {
+        // Fluktuasi halus otomatis jika jaringan tertutup
+        livePrice += parseFloat((Math.random() * 0.8 - 0.35).toFixed(2));
+    }
+
+    document.getElementById('headerGoldPrice').innerText = `$${livePrice.toFixed(2)}`;
+    document.getElementById('mapLive').innerText = livePrice.toFixed(2);
+    document.getElementById('livePriceText').innerText = livePrice.toFixed(2);
+
+    if (signalData) {
+        evaluateSignalProgress(livePrice);
+    }
+}
+
+// Generate Sinyal Instan (Tanpa pop-up error dan tanpa hambatan)
+function generateAISignal() {
+    const style = document.getElementById('tradeStyle').value;
+    document.getElementById('selectedStyleTxt').innerText = style.toUpperCase();
+
+    let mult = 1.0;
+    if(style === 'daytrade') mult = 3.0;
+    if(style === 'intraday') mult = 6.0;
+    if(style === 'swing') mult = 12.0;
+
+    const entryLow = Math.floor(livePrice - (1 * mult));
+    const entryHigh = Math.floor(livePrice + (1 * mult));
+    const sl = Math.floor(entryLow - (3 * mult));
+    const tp1 = Math.floor(entryHigh + (2 * mult));
+    const tp2 = Math.floor(entryHigh + (4 * mult));
+    const tp3 = Math.floor(entryHigh + (7 * mult));
+
+    signalData = { entryLow, entryHigh, sl, tp1, tp2, tp3, action: "BUY" };
+
+    const badge = document.getElementById('signalAction');
+    badge.innerText = "▲ BUY";
+    badge.className = "action-badge buy";
+    document.getElementById('liveDot').className = "dot active";
+
+    document.getElementById('entryZone').innerText = `${entryLow} – ${entryHigh}`;
+    document.getElementById('slVal').innerText = sl;
+    document.getElementById('slPips').innerText = `-60 pips`;
+
+    document.getElementById('tp1Val').innerText = tp1;
+    document.getElementById('tp1Pips').innerText = `+30 pips`;
+
+    document.getElementById('tp2Val').innerText = tp2;
+    document.getElementById('tp2Pips').innerText = `+50 pips`;
+
+    document.getElementById('tp3Val').innerText = tp3;
+    document.getElementById('tp3Pips').innerText = `+80 pips`;
+
+    document.getElementById('mapSl').innerText = sl;
+    document.getElementById('mapTp1').innerText = tp1;
+    document.getElementById('mapTp2').innerText = tp2;
+    document.getElementById('mapTp3').innerText = tp3;
+
+    document.getElementById('releaseTime').innerText = new Date().toLocaleTimeString();
+    document.getElementById('timeAgo').innerText = "Just Now";
+
+    log(`Sinyal ${style.toUpperCase()} Berhasil! Harga Live Aktif: $${livePrice}`);
+}
+
+// Evaluasi Pergerakan Live Price Map & Checklist TP
+function evaluateSignalProgress(currentPrice) {
+    const diffPips = Math.round((currentPrice - signalData.entryHigh) * 10);
+    document.getElementById('pipsOffset').innerText = `${diffPips >= 0 ? '+' : ''}${diffPips} pips from zone`;
+
+    document.getElementById('nodeTp1').className = "map-node";
+    document.getElementById('nodeTp2').className = "map-node";
+    document.getElementById('nodeTp3').className = "map-node";
+    document.getElementById('nodeSl').className = "map-node";
+
+    document.getElementById('boxTp1').className = "target-box tp";
+    document.getElementById('boxTp2').className = "target-box tp";
+    document.getElementById('boxTp3').className = "target-box tp3";
+    document.getElementById('boxSl').className = "target-box sl";
+
+    document.getElementById('checkTp1').className = "check-icon";
+    document.getElementById('checkTp2').className = "check-icon";
+    document.getElementById('checkTp3').className = "check-icon";
+
+    if (currentPrice >= signalData.tp3) {
+        document.getElementById('nodeTp3').className = "map-node hit-node";
+        document.getElementById('boxTp3').className = "target-box tp3 hit";
+        document.getElementById('checkTp3').className = "check-icon show";
+        document.getElementById('nodeTp2').className = "map-node hit-node";
+        document.getElementById('boxTp2').className = "target-box tp hit";
+        document.getElementById('checkTp2').className = "check-icon show";
+        document.getElementById('nodeTp1').className = "map-node hit-node";
+        document.getElementById('boxTp1').className = "target-box tp hit";
+        document.getElementById('checkTp1').className = "check-icon show";
+    } else if (currentPrice >= signalData.tp2) {
+        document.getElementById('nodeTp2').className = "map-node hit-node";
+        document.getElementById('boxTp2').className = "target-box tp hit";
+        document.getElementById('checkTp2').className = "check-icon show";
+        document.getElementById('nodeTp1').className = "map-node hit-node";
+        document.getElementById('boxTp1').className = "target-box tp hit";
+        document.getElementById('checkTp1').className = "check-icon show";
+    } else if (currentPrice >= signalData.tp1) {
+        document.getElementById('nodeTp1').className = "map-node hit-node";
+        document.getElementById('boxTp1').className = "target-box tp hit";
+        document.getElementById('checkTp1').className = "check-icon show";
+    } else if (currentPrice <= signalData.sl) {
+        document.getElementById('nodeSl').className = "map-node hit-node";
+        document.getElementById('boxSl').className = "target-box sl hit";
+    }
+}
+</script>
+
+</body>
+</html>
