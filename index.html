@@ -1,154 +1,371 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Chart Analyzer Terminal</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: { 500: '#6366f1', 600: '#4f46e5' },
-            dark: { 800: '#1e1e2d', 900: '#13131a', 700: '#2a2a3c' }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    .drag-active { border-color: #6366f1 !important; background-color: rgba(99, 102, 241, 0.1) !important; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chat Koding</title>
+<style>
+:root{--bg:#eef1f6;--surface:#fff;--ink:#1b2233;--muted:#6b7488;--line:#d9deea;--accent:#3b4cca;--accent-ink:#fff;--user:#dfe5fb;--code:#151a2b;--code-ink:#e6e9f5}
+@media (prefers-color-scheme:dark){:root{--bg:#12151f;--surface:#1b2030;--ink:#e8ebf5;--muted:#8d96ad;--line:#2b3247;--accent:#7f8cff;--accent-ink:#12151f;--user:#262d4a;--code:#0d1020;--code-ink:#e6e9f5}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.7 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line)}
+header h1{font:600 17px/1 system-ui,sans-serif;margin:0;flex:1}
+button{font:500 14px system-ui,sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+main{flex:1;display:flex;min-height:0}
+#chat{flex:1;display:flex;flex-direction:column;min-width:0}
+#log{flex:1;overflow-y:auto;padding:18px 14px}
+.wrap{max-width:760px;margin:0 auto}
+.msg{margin:0 0 18px}
+.msg.user .body{background:var(--user);border-radius:14px 14px 4px 14px;padding:10px 14px;margin-left:auto;width:fit-content;max-width:90%;white-space:pre-wrap}
+.msg.assistant .body{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;overflow-wrap:anywhere}
+.body>*:first-child{margin-top:0}.body>*:last-child{margin-bottom:0}
+.body p{margin:0 0 12px}
+.body h2,.body h3,.body h4{line-height:1.3;margin:20px 0 8px}
+.body h2{font-size:19px;padding-bottom:6px;border-bottom:1px solid var(--line)}.body h3{font-size:17px}.body h4{font-size:15px;color:var(--muted)}
+.body ul,.body ol{margin:0 0 12px;padding-left:22px}.body li{margin:0 0 6px}.body li::marker{color:var(--accent)}
+.body a{color:var(--accent)}
+.body blockquote{margin:0 0 12px;padding:8px 12px;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 8px 8px 0;color:var(--muted)}
+.body hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.tw{overflow-x:auto;margin:0 0 12px}table{border-collapse:collapse;font-size:14px;line-height:1.5;min-width:100%}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}th{background:var(--bg)}
+.body code.i{font:14px ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
+.cb{margin:10px 0;border:1px solid #2c3556;border-radius:10px;overflow:hidden;background:var(--code)}
+.cb summary{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;list-style:none;color:#cdd3ea;font:13px system-ui,sans-serif;background:#1c2340}
+.cb summary::-webkit-details-marker{display:none}
+.cb summary::before{content:"\25B8";color:#8d96ad;transition:transform .15s}
+.cb[open] summary::before{transform:rotate(90deg)}
+.cb summary b{font-weight:600;word-break:break-all}.cb summary em{font-style:normal;color:#8d96ad;font-size:12px}
+.sp{flex:1}
+.fi{background:var(--accent);color:var(--accent-ink);border-radius:4px;padding:1px 6px;font:600 11px ui-monospace,monospace;text-transform:lowercase}
+.cb summary button{padding:4px 9px;font-size:12px;background:transparent;color:#cdd3ea;border-color:#3b4570}
+.cb pre{margin:0;padding:12px;overflow:auto;max-height:420px;color:var(--code-ink);font:13px/1.5 ui-monospace,Menlo,monospace}
+.cb.live{border-color:var(--accent);background:#0a0e1f}.cb.live summary{background:#232c55}
+.cb.live em{color:#9fb0ff;animation:pl 1.2s infinite}@keyframes pl{50%{opacity:.4}}
+@media (prefers-reduced-motion:reduce){.cb.live em{animation:none}}
+.th{margin-bottom:10px}
+.thk{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}
+.thk em{font-style:normal;margin-left:auto;font-size:12px;font-variant-numeric:tabular-nums}
+.thk.end{font-size:12px}
+.orb{width:14px;height:14px;border-radius:50%;flex:none;background:conic-gradient(from 0deg,var(--accent),transparent 70%,var(--accent));-webkit-mask:radial-gradient(circle,transparent 4px,#000 5px);mask:radial-gradient(circle,transparent 4px,#000 5px);animation:spin 1.1s linear infinite}
+.orb.off{animation:none;background:var(--muted);opacity:.5}
+@keyframes spin{to{transform:rotate(360deg)}}
+.dots i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--muted);margin-left:3px;animation:bl 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.rs{margin:10px 0 0;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 10px 10px 0}
+.rs summary{cursor:pointer;padding:6px 12px;font-size:13px;color:var(--muted)}
+.rt{padding:0 12px 10px;font-size:13.5px;line-height:1.6;color:var(--muted);white-space:pre-wrap;max-height:220px;overflow:auto;font-style:italic}
+@media (prefers-reduced-motion:reduce){.orb,.dots i{animation:none}}
+.folder{margin:16px 0 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.fh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}.fh b{font-size:14px}.fh em{font-style:normal;color:var(--muted)}
+.folder .cb{margin:6px 0}
+.empty{color:var(--muted);text-align:center;margin-top:12vh;font-family:system-ui,sans-serif}
+.empty b{display:block;font-size:20px;color:var(--ink);margin-bottom:6px}
+form{padding:10px 14px 14px;background:var(--bg)}
+.row{max-width:760px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;resize:none;max-height:180px;min-height:46px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:16px/1.4 system-ui,sans-serif}
+#preview{display:none;flex:1;flex-direction:column;border-left:1px solid var(--line);background:var(--surface);min-width:0}
+#preview.on{display:flex}
+#preview .ph{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font:600 14px system-ui,sans-serif}
+#preview .ph span{flex:1}
+iframe{flex:1;border:0;background:#fff;width:100%}
+#chips{max-width:760px;margin:0 auto 8px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;font:13px system-ui,sans-serif}
+.chip small{color:var(--muted)}
+.chip button{padding:0 7px;border-radius:999px;line-height:20px}
+.drop{outline:2px dashed var(--accent);outline-offset:-6px}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);max-width:420px;width:calc(100% - 28px);padding:18px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog label{display:block;font:600 13px system-ui,sans-serif;margin:12px 0 4px}
+dialog input,dialog select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:15px system-ui,sans-serif}
+dialog small{display:block;color:var(--muted);font:13px/1.4 system-ui,sans-serif;margin-top:6px}
+@media (max-width:760px){#preview.on{position:fixed;inset:0;z-index:5;border:0;padding-top:env(safe-area-inset-top,0px)}}
+</style>
 </head>
-<body class="bg-dark-900 text-gray-100 min-h-screen p-4 md:p-8 font-sans">
-  <div class="max-w-6xl mx-auto space-y-6">
-    
-    <!-- Header -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
-      <div>
-        <h1 class="text-2xl font-bold text-white tracking-wide">AI Multi-Timeframe Chart Analyzer</h1>
-        <p class="text-xs text-gray-400 mt-1">SMC / Price Action Signal Generator via OpenAI Vision</p>
+<body>
+<header>
+  <h1>Chat Koding</h1>
+  <button id="newBtn" type="button">Chat baru</button>
+  <button id="setBtn" type="button">Pengaturan</button>
+</header>
+<main>
+  <section id="chat">
+    <div id="log"><div class="wrap" id="msgs"></div></div>
+    <form id="form">
+      <div id="chips"></div>
+      <div class="row">
+        <button id="attach" type="button" aria-label="Lampirkan file">Lampir</button>
+        <input id="fileIn" type="file" multiple hidden>
+        <textarea id="input" rows="1" placeholder="Minta dibuatkan halaman HTML, perbaiki bug, atau tanya apa saja"></textarea>
+        <button class="primary" id="send" type="submit">Kirim</button>
       </div>
-      <div class="flex items-center gap-2">
-        <input type="password" id="apiKey" placeholder="OpenAI API Key (sk-...)" class="bg-dark-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-brand-500 w-64" />
-      </div>
-    </header>
+    </form>
+  </section>
+  <aside id="preview">
+    <div class="ph"><span>Pratinjau HTML</span><button id="closePv" type="button">Tutup</button></div>
+    <iframe id="frame" sandbox="allow-scripts allow-forms allow-modals" title="Pratinjau"></iframe>
+  </aside>
+</main>
 
-    <!-- Upload Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      
-      <!-- HTF Dropzone -->
-      <div class="bg-dark-800 border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
-        <div class="flex justify-between items-center mb-3">
-          <span class="text-sm font-semibold text-brand-500">Higher Timeframe (HTF Structure)</span>
-          <span class="text-xs text-gray-500" id="htfLabel">M15 / M30 / H1 / H4</span>
-        </div>
-        
-        <div id="dropHTF" class="border-2 border-dashed border-gray-700 hover:border-gray-500 rounded-lg p-6 text-center cursor-pointer transition-all relative min-h-[180px] flex flex-col justify-center items-center">
-          <input type="file" id="fileHTF" accept="image/*" class="hidden" onchange="handleFileSelect(event, 'HTF')" />
-          <div id="previewHTF" class="hidden w-full h-full relative">
-            <img id="imgHTF" class="max-h-48 mx-auto rounded object-contain" />
-            <button onclick="removeImage('HTF', event)" class="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 text-xs hover:bg-red-700">✕</button>
-          </div>
-          <div id="promptHTF" class="space-y-2 pointer-events-none">
-            <svg class="w-8 h-8 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            <p class="text-xs text-gray-400">Klik atau Drag & Drop Chart HTF di sini</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- LTF Dropzone -->
-      <div class="bg-dark-800 border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
-        <div class="flex justify-between items-center mb-3">
-          <span class="text-sm font-semibold text-emerald-500">Lower Timeframe (LTF Entry)</span>
-          <span class="text-xs text-gray-500" id="ltfLabel">M1 / M3 / M5 / M15</span>
-        </div>
-        
-        <div id="dropLTF" class="border-2 border-dashed border-gray-700 hover:border-gray-500 rounded-lg p-6 text-center cursor-pointer transition-all relative min-h-[180px] flex flex-col justify-center items-center">
-          <input type="file" id="fileLTF" accept="image/*" class="hidden" onchange="handleFileSelect(event, 'LTF')" />
-          <div id="previewLTF" class="hidden w-full h-full relative">
-            <img id="imgLTF" class="max-h-48 mx-auto rounded object-contain" />
-            <button onclick="removeImage('LTF', event)" class="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 text-xs hover:bg-red-700">✕</button>
-          </div>
-          <div id="promptLTF" class="space-y-2 pointer-events-none">
-            <svg class="w-8 h-8 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            <p class="text-xs text-gray-400">Klik atau Drag & Drop Chart LTF di sini</p>
-          </div>
-        </div>
-      </div>
-
-    </div>
+<dialog id="dlg">
+  <b style="font:600 17px system-ui,sans-serif">Pengaturan</b>
+  <label for="key">API key</label>
+  <input id="key" type="password" placeholder="key dari penyedia API" autocomplete="off">
+  <small>Disimpan hanya di browser ini. Untuk dipakai publik, jangan taruh key di HTML: pakai backend sendiri (lihat catatan).</small>
+  <label for="model">Model</label>
+  <input id="model" value="qwen-4-max">
+  <label for="fmt">Format API</label>
+  <select id="fmt"><option value="openai">OpenAI-compatible (/chat/completions)</option><option value="anthropic">Anthropic (/messages)</option></select>
+  <small>Kebanyakan relay memakai OpenAI-compatible. Jika error 404, coba format satunya.</small>
+  <label for="endpoint">Base URL</label>
+  <input id="endpoint" value="https://api.gutsai.id/v1">
+  <label for="maxtok">Batas panjang jawaban (token)</label>
+  <input id="maxtok" type="number" value="32000">
+  <small>Kode 3000-5000 baris butuh puluhan ribu token. Naikkan jika jawaban terpotong.</small>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+    <button id="saveBtn" class="primary" type="button">Simpan</button>
   </div>
+</dialog>
 
-  <script>
-    const images = { HTF: null, LTF: null };
+<script>
+const $=id=>document.getElementById(id);
+const DEF_EP='https://api.gutsai.id/v1',DEF_MODEL='qwen-4-max';
+const SYSTEM="Kamu asisten koding yang menjawab dalam bahasa Indonesia. Susun jawaban rapi: ringkasan singkat, lalu poin atau langkah bernomor, pakai judul ## hanya jika perlu. Setiap file kode ditulis dalam blok terpisah dan SELALU diawali nama file setelah bahasa, contoh ```html index.html, ```js app.js, ```css style.css (boleh pakai folder seperti src/app.js). Satu file per blok, tulis kode lengkap. Jika diminta halaman web, usahakan satu file HTML lengkap (HTML, CSS, JS inline) agar bisa dipratinjau. Jangan bertele-tele.";
+let history=[],busy=false,abort=null;
+const store={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
-    // Setup Event Listeners
-    ['HTF', 'LTF'].forEach(type => {
-      const dropZone = document.getElementById(`drop${type}`);
-      const fileInput = document.getElementById(`file${type}`);
+// ---------- render ----------
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function inline(t){return esc(t).replace(/`([^`]+)`/g,'<code class="i">$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\*([^*\s][^*]*)\*/g,'<i>$1</i>').replace(/\[([^\]]+)\]\((https?:[^)\s"']+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')}
+function prose(t){
+  const L=t.split('\n');let h='',i=0,m;
+  const row=l=>/^\s*\|.*\|\s*$/.test(l),li=/^\s*(?:([-*])|(\d+)\.)\s+(.*)/;
+  const cells=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(c=>inline(c.trim()));
+  while(i<L.length){
+    const l=L[i];if(!l.trim()){i++;continue}
+    if(m=l.match(/^(#{1,4})\s+(.*)/)){const n=Math.max(2,Math.min(m[1].length,4));h+='<h'+n+'>'+inline(m[2])+'</h'+n+'>';i++;continue}
+    if(/^\s*([-*_]\s*){3,}$/.test(l)){h+='<hr>';i++;continue}
+    if(row(l)&&i+1<L.length&&/^\s*\|[\s:|-]+\|\s*$/.test(L[i+1])){
+      h+='<div class="tw"><table><thead><tr>'+cells(l).map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>';i+=2;
+      while(i<L.length&&row(L[i])){h+='<tr>'+cells(L[i]).map(c=>'<td>'+c+'</td>').join('')+'</tr>';i++}
+      h+='</tbody></table></div>';continue}
+    if(/^\s*>/.test(l)){const q=[];while(i<L.length&&/^\s*>/.test(L[i])){q.push(L[i].replace(/^\s*>\s?/,''));i++}h+='<blockquote>'+inline(q.join(' '))+'</blockquote>';continue}
+    if(m=l.match(li)){const tag=m[2]?'ol':'ul';h+='<'+tag+'>';while(i<L.length&&(m=L[i].match(li))){h+='<li>'+inline(m[3])+'</li>';i++}h+='</'+tag+'>';continue}
+    const p=[];
+    while(i<L.length&&L[i].trim()&&!/^(#{1,4}\s|\s*>|\s*(?:[-*]|\d+\.)\s|\s*\|)/.test(L[i])){p.push(L[i]);i++}
+    if(!p.length){p.push(L[i]);i++}
+    h+='<p>'+inline(p.join(' '))+'</p>';
+  }
+  return h;
+}
+const EXT={javascript:'js',typescript:'ts',python:'py',markdown:'md',shell:'sh',bash:'sh',yaml:'yml'};
+function card(f){
+  const lines=f.code?f.code.split('\n').length:0,isHtml=/\.html?$/i.test(f.name);
+  const btns=f.live?'':(isHtml?'<button type="button" data-a="pv">Pratinjau</button>':'')+'<button type="button" data-a="cp">Salin</button><button type="button" data-a="dl">Unduh</button>';
+  return '<details class="cb'+(f.live?' live':'')+'"'+(f.live?' open':'')+' data-name="'+esc(f.name)+'"><summary><span class="fi">'+esc(f.name.split('.').pop().slice(0,4))+'</span><b>'+esc(f.name)+'</b><em>'+(f.live?'menulis... ':'')+lines+' baris</em><span class="sp"></span>'+btns+'</summary><pre><code>'+esc(f.code)+'</code></pre></details>';
+}
+function folder(fs){
+  const n=fs.reduce((a,f)=>a+(f.code?f.code.split('\n').length:0),0);
+  return '<div class="folder"><div class="fh"><b>Berkas proyek</b><em>'+fs.length+' file, '+n+' baris</em><span class="sp"></span>'+(fs.length>1?'<button type="button" data-a="tog">Buka/tutup semua</button><button type="button" data-a="zip">Unduh zip</button>':'')+'</div>'+fs.map(card).join('')+'</div>';
+}
+function md(text,done){
+  const parts=text.split('```'),fs=[];let out='',n=0;
+  parts.forEach((p,i)=>{
+    if(i%2===0){out+=prose(p);return}
+    const nl=p.indexOf('\n'),info=(nl>-1?p.slice(0,nl):p).trim(),code=nl>-1?p.slice(nl+1).replace(/\n$/,''):'';
+    const lang=(info.split(/[\s:]+/)[0]||'').toLowerCase(),nm=info.split(/[\s:]+/)[1]||'';
+    let name=/\.\w+$/.test(nm)?nm:'';
+    if(!name){const m=code.slice(0,200).match(/^\s*(?:\/\/|#|<!--|\/\*|--)\s*(?:file(?:name)?\s*:?\s*)?([\w.\/-]+\.\w{1,5})\s*(?:-->|\*\/)?\s*(?:\n|$)/i);if(m)name=m[1]}
+    if(!name)name='kode-'+(++n)+'.'+(EXT[lang]||lang||'txt');
+    const f={name,code,live:!done&&i===parts.length-1};fs.push(f);
+    if(!done)out+=card(f);
+  });
+  return done&&fs.length?out+folder(fs):out;
+}
+function dl(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function crc32(u){const t=crc32.t||(crc32.t=Array.from({length:256},(_,n)=>{let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;return c>>>0}));let r=-1;for(let i=0;i<u.length;i++)r=t[(r^u[i])&255]^(r>>>8);return(r^-1)>>>0}
+function makeZip(list){
+  const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+  for(const f of list){
+    const n=enc.encode(f.name),d=enc.encode(f.text),crc=crc32(d);
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint32(14,crc,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,n.length,true);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint32(16,crc,true);c.setUint32(20,d.length,true);c.setUint32(24,d.length,true);c.setUint16(28,n.length,true);c.setUint32(42,off,true);
+    parts.push(h.buffer,n,d);cen.push(c.buffer,n);off+=30+n.length+d.length;
+  }
+  const cs=cen.reduce((a,b)=>a+b.byteLength,0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,list.length,true);e.setUint16(10,list.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,e.buffer],{type:'application/zip'});
+}
+function addMsg(role,text){
+  const d=document.createElement('div');d.className='msg '+role;
+  const b=document.createElement('div');b.className='body';
+  role==='user'?b.textContent=text:b.innerHTML=md(text,true);
+  d.appendChild(b);$('msgs').appendChild(d);scroll();return b;
+}
+function scroll(){const l=$('log');l.scrollTop=l.scrollHeight}
+function empty(){$('msgs').innerHTML='<div class="empty"><b>Mau bikin apa hari ini?</b>Minta halaman HTML, lalu lihat hasilnya langsung di pratinjau.</div>'}
 
-      // Click to trigger file input
-      dropZone.addEventListener('click', () => fileInput.click());
+// ---------- code block actions ----------
+$('msgs').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-a]');if(!btn)return;
+  e.preventDefault();e.stopPropagation();const a=btn.dataset.a;
+  if(a==='zip'||a==='tog'){
+    const all=[...btn.closest('.folder').querySelectorAll('.cb')];
+    if(a==='zip')dl(makeZip(all.map(x=>({name:x.dataset.name,text:x.querySelector('code').textContent}))),'proyek.zip');
+    else{const o=!all.every(x=>x.open);all.forEach(x=>x.open=o)}
+    return;
+  }
+  const cb=btn.closest('.cb'),code=cb.querySelector('code').textContent;
+  if(a==='cp'){navigator.clipboard.writeText(code).then(()=>{btn.textContent='Tersalin';setTimeout(()=>btn.textContent='Salin',1500)}).catch(()=>{})}
+  else if(a==='dl')dl(new Blob([code],{type:'text/plain'}),cb.dataset.name.split('/').pop());
+  else{$('frame').srcdoc=code;$('preview').classList.add('on')}
+});
+$('closePv').onclick=()=>$('preview').classList.remove('on');
 
-      // Drag & Drop Handling
-      ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          dropZone.classList.add('drag-active');
-        }, false);
-      });
+// ---------- lampiran ----------
+let files=[];
+const b64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f)});
+async function readZip(f){
+  if(typeof DecompressionStream==='undefined')throw new Error('browser terlalu lama, perbarui Chrome/Safari');
+  const buf=await f.arrayBuffer(),dv=new DataView(buf),u8=new Uint8Array(buf);
+  let e=-1;
+  for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-65557);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}
+  if(e<0)throw new Error('bukan file zip yang valid');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);
+  const out=[],skipped=[],strict=new TextDecoder('utf-8',{fatal:true}),loose=new TextDecoder();
+  for(let k=0;k<n;k++){
+    if(dv.getUint32(p,true)!==0x02014b50)break;
+    const flag=dv.getUint16(p+8,true),method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),usize=dv.getUint32(p+24,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    const name=loose.decode(u8.subarray(p+46,p+46+nl));
+    p+=46+nl+xl+cl;
+    if(name.endsWith('/')||/(^|\/)(node_modules|\.git|__MACOSX)\//.test(name)||/(^|\/)\.DS_Store$/.test(name))continue;
+    if(flag&1){skipped.push(name+' (terenkripsi)');continue}
+    if(usize>1.5*1024*1024){skipped.push(name+' (terlalu besar)');continue}
+    const ds=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true);
+    let data=u8.subarray(ds,ds+csize);
+    try{
+      if(method===8)data=new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      else if(method!==0){skipped.push(name+' (kompresi tidak didukung)');continue}
+      const t=strict.decode(data);
+      if(t.includes('\0')){skipped.push(name+' (biner)');continue}
+      out.push({name,text:t});
+    }catch(err){skipped.push(name+' (bukan teks)')}
+  }
+  return {out,skipped};
+}
+async function addFile(f){
+  if(f.size>30*1024*1024){alert(f.name+' terlalu besar (maks 30 MB).');return}
+  const name=f.name||'gambar-tempel.png';
+  if(/\.zip$/i.test(name)||/zip/.test(f.type)){
+    try{
+      const {out,skipped}=await readZip(f);
+      if(!out.length){alert(name+': tidak ada file teks/kode di dalam zip.');return}
+      const lines=out.reduce((n,x)=>n+x.text.split('\n').length,0);
+      const text=out.map(x=>'<file name="'+x.name+'">\n'+x.text+'\n</file>').join('\n');
+      files.push({name:name+' ('+out.length+' file)',lines,block:{type:'text',text:'Isi arsip '+name+':\n'+text}});
+      renderChips();
+      if(skipped.length)alert('Dilewati ('+skipped.length+'):\n'+skipped.slice(0,15).join('\n')+(skipped.length>15?'\n...':''));
+    }catch(err){alert(name+': gagal dibaca. '+err.message)}
+    return;
+  }
+  if(/^image\/(png|jpeg|gif|webp)$/.test(f.type)){files.push({name,block:{type:'image',source:{type:'base64',media_type:f.type,data:await b64(f)}}})}
+  else if(f.type==='application/pdf'){files.push({name,block:{type:'document',source:{type:'base64',media_type:'application/pdf',data:await b64(f)}}})}
+  else{
+    const t=await f.text();
+    if(t.includes('\u0000')||t.includes('\ufffd\ufffd')){alert(name+': format tidak didukung. Pakai gambar, PDF, zip, atau file teks/kode.');return}
+    files.push({name,lines:t.split('\n').length,block:{type:'text',text:'<file name="'+name+'">\n'+t+'\n</file>'}});
+  }
+  renderChips();
+}
+function renderChips(){
+  $('chips').innerHTML=files.map((f,i)=>'<span class="chip">'+esc(f.name)+(f.lines?' <small>'+f.lines+' baris</small>':'')+'<button type="button" data-rm="'+i+'" aria-label="Hapus">x</button></span>').join('');
+}
+$('chips').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){files.splice(+b.dataset.rm,1);renderChips()}});
+$('attach').onclick=()=>$('fileIn').click();
+$('fileIn').onchange=async e=>{for(const f of e.target.files)await addFile(f);e.target.value=''};
+$('input').addEventListener('paste',async e=>{const fs=[...e.clipboardData.files];if(fs.length){e.preventDefault();for(const f of fs)await addFile(f)}});
+['dragover','drop'].forEach(ev=>document.addEventListener(ev,async e=>{e.preventDefault();if(ev==='drop'){document.body.classList.remove('drop');for(const f of e.dataTransfer.files)await addFile(f)}else document.body.classList.add('drop')}));
+document.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('drop')});
 
-      ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          dropZone.classList.remove('drag-active');
-        }, false);
-      });
-
-      dropZone.addEventListener('drop', (e) => {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files && files.length > 0) {
-          processFile(files[0], type);
-        }
-      });
-    });
-
-    function handleFileSelect(event, type) {
-      const files = event.target.files;
-      if (files && files.length > 0) {
-        processFile(files[0], type);
+// ---------- send ----------
+async function send(text,atts){
+  const key=store.get('key','');
+  if(!key){$('dlg').showModal();return}
+  if($('msgs').querySelector('.empty'))$('msgs').innerHTML='';
+  const names=atts.map(a=>a.name).join(', ');
+  history.push({role:'user',content:[...atts.map(a=>a.block),{type:'text',text}]});
+  addMsg('user',text+(names?'\n\nLampiran: '+names:''));
+  const body=addMsg('assistant','');
+  body.innerHTML='<div class="th"><div class="thk"><span class="orb"></span><span class="tx"></span><span class="dots"><i></i><i></i><i></i></span><em></em></div><details class="rs" hidden><summary>Proses berpikir</summary><div class="rt"></div></details></div><div class="an"></div>';
+  const th=body.querySelector('.th'),an=body.querySelector('.an'),tx=th.querySelector('.tx'),em=th.querySelector('em'),rsd=th.querySelector('.rs'),rt=th.querySelector('.rt');
+  const t0=Date.now(),sec=()=>Math.round((Date.now()-t0)/1000),phr=[atts.length?'Membaca pesan dan lampiran':'Membaca pesan','Menganalisis permintaan','Menyusun rencana','Menulis jawaban','Masih memproses, mohon tunggu'];
+  let rs='',ended=false;
+  const upd=()=>{const n=sec();em.textContent=n+' dtk';if(!rs)tx.textContent=phr[Math.min(Math.floor(n/3),phr.length-1)]};
+  upd();const tick=setInterval(upd,500);
+  const endThink=()=>{if(ended)return;ended=true;clearInterval(tick);const n=sec(),k=th.querySelector('.thk');
+    if(rs){k.hidden=true;rsd.querySelector('summary').textContent='Berpikir '+n+' dtk';rsd.open=false}
+    else{k.classList.add('end');k.innerHTML='<span class="orb off"></span><span class="tx">Berpikir '+n+' dtk</span>'}};
+  let acc='';busy=true;$('send').textContent='Berhenti';
+  abort=new AbortController();
+  try{
+    const fmt=store.get('fmt','openai');
+    const base=store.get('endpoint',DEF_EP).trim().replace(/\/+$/,'').replace(/\/(chat\/completions|messages)$/,'');
+    const model=store.get('model',DEF_MODEL),maxTok=parseInt(store.get('maxtok','32000'))||32000;
+    let url,headers,payload;
+    if(fmt==='anthropic'){
+      url=base+'/messages';
+      headers={'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+      payload={model,max_tokens:maxTok,stream:true,system:SYSTEM,messages:history};
+    }else{
+      url=base+'/chat/completions';
+      headers={'content-type':'application/json','authorization':'Bearer '+key};
+      const conv=c=>typeof c==='string'?c:c.map(x=>x.type==='image'?{type:'image_url',image_url:{url:'data:'+x.source.media_type+';base64,'+x.source.data}}:x.type==='document'?{type:'file',file:{filename:'dokumen.pdf',file_data:'data:application/pdf;base64,'+x.source.data}}:x);
+      payload={model,max_tokens:maxTok,stream:true,messages:[{role:'system',content:SYSTEM},...history.map(m=>({role:m.role,content:conv(m.content)}))]};
+    }
+    const res=await fetch(url,{method:'POST',signal:abort.signal,headers,body:JSON.stringify(payload)});
+    if(!res.ok){const t=await res.text();throw new Error(res.status+' '+t.slice(0,300))}
+    const reader=res.body.getReader(),dec=new TextDecoder();let buf='',last=0;
+    const draw=()=>{const t=Date.now();if(t-last<120)return;last=t;an.innerHTML=md(acc,false);const lp=an.querySelector('.cb.live pre');if(lp)lp.scrollTop=lp.scrollHeight;scroll()};
+    while(true){
+      const {done,value}=await reader.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop();
+      for(const ln of lines){
+        if(!ln.startsWith('data:'))continue;
+        try{const j=JSON.parse(ln.slice(5));
+          const d=j.type==='content_block_delta'&&j.delta.type==='text_delta'?j.delta.text:(j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content)||'';
+          const rd=(j.choices&&j.choices[0]&&j.choices[0].delta&&(j.choices[0].delta.reasoning_content||j.choices[0].delta.reasoning))||(j.type==='content_block_delta'&&j.delta.type==='thinking_delta'?j.delta.thinking:'');
+          if(rd&&!ended){if(!rs){rsd.hidden=false;rsd.open=true;tx.textContent='Sedang berpikir'}rs+=rd;rt.textContent=rs;rt.scrollTop=rt.scrollHeight;scroll()}
+          if(d){endThink();acc+=d;draw()}
+          if(j.type==='error'||j.error)throw new Error((j.error&&j.error.message)||'error')}catch(err){if(err.message&&!(err instanceof SyntaxError))throw err}
       }
     }
+    endThink();an.innerHTML=md(acc,true);scroll();history.push({role:'assistant',content:acc});
+  }catch(err){
+    if(err.name==='AbortError'){endThink();if(acc){an.innerHTML=md(acc,true);history.push({role:'assistant',content:acc})}}
+    else{history.pop();body.innerHTML='<p><b>Gagal terhubung.</b> '+esc(err.message)+'</p><p>Periksa API key, nama model, dan Format API. Jika pesannya \'Failed to fetch\' atau CORS, relay tidak mengizinkan akses langsung dari browser dan perlu proxy.</p>'}
+  }
+  clearInterval(tick);busy=false;abort=null;$('send').textContent='Kirim';
+}
+$('form').addEventListener('submit',e=>{
+  e.preventDefault();
+  if(busy){abort&&abort.abort();return}
+  let t=$('input').value.trim();if(!t&&!files.length)return;
+  if(!t)t='Tolong periksa file ini.';
+  const atts=files;files=[];renderChips();
+  $('input').value='';$('input').style.height='';send(t,atts);
+});
+$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&matchMedia('(min-width:761px)').matches){e.preventDefault();$('form').requestSubmit()}});
+$('input').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,180)+'px'});
 
-    function processFile(file, type) {
-      if (!file.type.startsWith('image/')) {
-        alert('Harap upload file gambar (.png, .jpg, .jpeg)');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        images[type] = e.target.result;
-        document.getElementById(`img${type}`).src = e.target.result;
-        document.getElementById(`preview${type}`).classList.remove('hidden');
-        document.getElementById(`prompt${type}`).classList.add('hidden');
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function removeImage(type, event) {
-      event.stopPropagation();
-      images[type] = null;
-      document.getElementById(`file${type}`).value = '';
-      document.getElementById(`preview${type}`).classList.add('hidden');
-      document.getElementById(`prompt${type}`).classList.remove('hidden');
-    }
-  </script>
+// ---------- settings ----------
+$('setBtn').onclick=()=>{$('key').value=store.get('key','');$('model').value=store.get('model',DEF_MODEL);$('endpoint').value=store.get('endpoint',DEF_EP);$('maxtok').value=store.get('maxtok','32000');$('fmt').value=store.get('fmt','openai');$('dlg').showModal()};
+$('saveBtn').onclick=()=>{store.set('key',$('key').value.trim());store.set('model',$('model').value.trim()||DEF_MODEL);store.set('endpoint',$('endpoint').value.trim()||DEF_EP);store.set('maxtok',$('maxtok').value||'32000');store.set('fmt',$('fmt').value);$('dlg').close()};
+$('newBtn').onclick=()=>{if(abort)abort.abort();history=[];empty();$('preview').classList.remove('on')};
+empty();
+</script>
 </body>
 </html>
